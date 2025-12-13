@@ -237,7 +237,13 @@ createApp({
 
 const updateContent = () => {
     const dot = document.querySelector('.dot');
-    fetch('/api/status').then(r => r.json()).then(data => {
+    fetch('/api/status').then(r => {
+        if (r.redirected) {
+            window.location.href = r.url;
+            return Promise.reject('Redirecting to login');
+        }
+        return r.json();
+    }).then(data => {
         // Update dot to green when connected
         dot.className = 'dot status-running';
 
@@ -276,6 +282,10 @@ const updateContent = () => {
         if (isScrolledToBottom) { logContainer.scrollTop = logContainer.scrollHeight; }
     })
         .catch(err => {
+            if (err === 'Redirecting to login') {
+                console.log(err);
+                return;
+            }
             console.error('Error:', err);
             // Update dot to red when connection fails
             dot.className = 'dot status-error';
