@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="title">Google AI Studio Proxy - Service Status</title>
+
+    <!-- Import Vue.js and Element Plus -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+
     <style>
         body {
             font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
@@ -148,25 +154,50 @@
         .lang-switcher svg {
             display: block;
         }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .switch-container .switch-label {
+            font-size: 1em;
+            color: #333;
+            min-width: 150px;
+            font-weight: 500;
+        }
+
+        .switch-container .switch-status {
+            font-size: 0.9em;
+            color: #666;
+            min-width: 60px;
+        }
+
+        #app {
+            display: contents;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <button class="lang-switcher" onclick="toggleLanguage()" title="Switch Language">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m5 8 6 6"></path>
-                <path d="m4 14 6-6 2-3"></path>
-                <path d="M2 5h12"></path>
-                <path d="M7 2h1"></path>
-                <path d="m22 22-5-10-5 10"></path>
-                <path d="M14 18h6"></path>
-            </svg>
-        </button>
-        <h1><span data-i18n="heading">Proxy Service Status</span> <span class="dot"></span></h1>
-        <div id="status-section">
-            <pre>
+    <div id="app">
+        <div class="container">
+            <button class="lang-switcher" onclick="toggleLanguage()" title="Switch Language">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m5 8 6 6"></path>
+                    <path d="m4 14 6-6 2-3"></path>
+                    <path d="M2 5h12"></path>
+                    <path d="M7 2h1"></path>
+                    <path d="m22 22-5-10-5 10"></path>
+                    <path d="M14 18h6"></path>
+                </svg>
+            </button>
+            <h1><span data-i18n="heading">Proxy Service Status</span> <span class="dot"></span></h1>
+            <div id="status-section">
+                <pre>
 <span class="label" data-i18n="serviceStatus">Service Status</span>: <span class="status-ok" data-i18n="running">Running</span>
 <span class="label" data-i18n="browserConnection">Browser Connection</span>: <span class="{{browserConnectedClass}}">{{browserConnected}}</span>
 --- <span data-i18n="serviceConfig">Service Configuration</span> ---
@@ -181,20 +212,33 @@
 {{accountDetailsHtml}}
 <span class="label" data-i18n="formatErrors">Format Errors (Ignored)</span>: {{formatErrors}}
         </pre>
-        </div>
-        <div id="actions-section" style="margin-top: 2em;">
-            <h2 data-i18n="actionsPanel">Actions Panel</h2>
-            <div class="action-group">
-                <select id="account-index-select">{{accountOptionsHtml}}</select>
-                <button onclick="switchSpecificAccount()" data-i18n="btnSwitchAccount">Switch Account</button>
-                <button onclick="toggleStreamingMode()" data-i18n="btnToggleStreaming">Toggle Streaming Mode</button>
-                <button onclick="toggleForceThinking()" data-i18n="btnToggleThinking">Toggle Force Thinking</button>
             </div>
-        </div>
-        <div id="log-section" style="margin-top: 2em;">
-            <h2><span data-i18n="realtimeLogs">Real-time Logs</span> (<span data-i18n="latestEntries">Latest</span>
-                {{logCount}} <span data-i18n="entries">entries</span>)</h2>
-            <pre id="log-container">{{logs}}</pre>
+            <div id="actions-section" style="margin-top: 2em;">
+                <h2 data-i18n="actionsPanel">Actions Panel</h2>
+                <div class="action-group">
+                    <select id="account-index-select">{{accountOptionsHtml}}</select>
+                    <button onclick="switchSpecificAccount()" data-i18n="btnSwitchAccount">Switch Account</button>
+                </div>
+                <div class="switch-container">
+                    <span class="switch-label" data-i18n="streamingMode">Streaming Mode</span>
+                    <el-switch v-model="streamingModeReal" :before-change="handleStreamingModeBeforeChange"
+                        style="--el-switch-on-color: #007bff; --el-switch-off-color: #dcdfe6">
+                    </el-switch>
+                    <span class="switch-status">{{ streamingModeText }}</span>
+                </div>
+                <div class="switch-container">
+                    <span class="switch-label" data-i18n="forceThinking">Force Thinking</span>
+                    <el-switch v-model="forceThinkingEnabled" :before-change="handleForceThinkingBeforeChange"
+                        style="--el-switch-on-color: #007bff; --el-switch-off-color: #dcdfe6">
+                    </el-switch>
+                    <span class="switch-status">{{ forceThinkingText }}</span>
+                </div>
+            </div>
+            <div id="log-section" style="margin-top: 2em;">
+                <h2><span data-i18n="realtimeLogs">Real-time Logs</span> (<span data-i18n="latestEntries">Latest</span>
+                    {{logCount}} <span data-i18n="entries">entries</span>)</h2>
+                <pre id="log-container">{{logs}}</pre>
+            </div>
         </div>
     </div>
     <script>
@@ -219,18 +263,13 @@
                 formatErrors: 'Format Errors (Ignored)',
                 actionsPanel: 'Actions Panel',
                 btnSwitchAccount: 'Switch Account',
-                btnToggleStreaming: 'Toggle Streaming Mode',
-                btnToggleThinking: 'Toggle Force Thinking',
                 realtimeLogs: 'Real-time Logs',
                 latestEntries: 'Latest',
                 entries: 'entries',
-                // Dynamic content translations
                 account: 'Account',
                 immediateSwitchCodes: 'Immediate Switch (Codes)',
                 confirmSwitch: 'Are you sure you want to switch to account',
                 operationInProgress: 'Operation in progress...',
-                enterNewMode: 'Please enter new streaming mode (real or fake):',
-                invalidMode: 'Invalid mode!',
                 settingFailed: 'Setting failed: '
             },
             zh: {
@@ -252,18 +291,13 @@
                 formatErrors: '格式错误（已忽略）',
                 actionsPanel: '操作面板',
                 btnSwitchAccount: '切换账户',
-                btnToggleStreaming: '切换流式模式',
-                btnToggleThinking: '切换强制思考',
                 realtimeLogs: '实时日志',
                 latestEntries: '最新',
                 entries: '条',
-                // Dynamic content translations
                 account: '账户',
                 immediateSwitchCodes: '立即切换（代码）',
                 confirmSwitch: '确定要切换到账户',
                 operationInProgress: '操作进行中...',
-                enterNewMode: '请输入新的流式模式（real 或 fake）：',
-                invalidMode: '无效的模式！',
                 settingFailed: '设置失败：'
             }
         };
@@ -294,14 +328,101 @@
 
         const t = key => translations[currentLang][key] || key;
 
-        // ========== Original Features ==========
-        const CURRENT_STREAMING_MODE = '{{streamingMode}}';
+        // ========== Vue App ==========
+        let vueApp = null;
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    streamingModeReal: false,
+                    forceThinkingEnabled: false,
+                    isUpdating: false,
+                }
+            },
+            computed: {
+                streamingModeText() {
+                    return this.streamingModeReal ? 'real' : 'fake';
+                },
+                forceThinkingText() {
+                    return this.forceThinkingEnabled ? 'true' : 'false';
+                }
+            },
+            methods: {
+                handleStreamingModeBeforeChange() {
+                    if (this.isUpdating) { return false; }
+
+                    const newValue = !this.streamingModeReal;
+                    const newMode = newValue ? 'real' : 'fake';
+
+                    return new Promise((resolve, reject) => {
+                        fetch('/api/set-mode', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ mode: newMode })
+                        })
+                            .then(res => res.text())
+                            .then(data => {
+                                ElementPlus.ElMessage.success(data);
+                                resolve(true);
+                            })
+                            .catch(err => {
+                                ElementPlus.ElMessage.error(t('settingFailed') + err);
+                                reject();
+                            });
+                    });
+                },
+                handleForceThinkingBeforeChange() {
+                    if (this.isUpdating)  { return false; }
+
+                    const newValue = !this.forceThinkingEnabled;
+
+                    return new Promise((resolve, reject) => {
+                        fetch('/api/toggle-force-thinking', { method: 'POST' })
+                            .then(res => res.text())
+                            .then(data => {
+                                ElementPlus.ElMessage.success(data);
+                                resolve(true);
+                            })
+                            .catch(err => {
+                                ElementPlus.ElMessage.error(t('settingFailed') + err);
+                                reject();
+                            });
+                    });
+                },
+                updateSwitchStates(data) {
+                    this.isUpdating = true;
+                    this.streamingModeReal = data.status.streamingMode.includes('real');
+                    this.forceThinkingEnabled = data.status.forceThinking.includes('Enabled');
+                    this.$nextTick(() => {
+                        this.isUpdating = false;
+                    });
+                }
+            },
+            mounted() {
+                vueApp = this;
+
+                const initialMode = '{{streamingMode}}';
+                const initialThinking = '{{forceThinking}}';
+                this.isUpdating = true;
+                this.streamingModeReal = initialMode === 'real';
+                this.forceThinkingEnabled = initialThinking === 'true' || initialThinking === true;
+
+                this.$nextTick(() => {
+                    this.isUpdating = false;
+                });
+            }
+        }).use(ElementPlus).mount('#app');
 
         const updateContent = () => {
             const dot = document.querySelector('.dot');
             fetch('/api/status').then(r => r.json()).then(data => {
                 // Update dot to green when connected
                 dot.className = 'dot status-running';
+
+                // Update Vue switch states
+                if (vueApp && vueApp.updateSwitchStates) {
+                    vueApp.updateSwitchStates(data);
+                }
 
                 const statusPre = document.querySelector('#status-section pre');
                 const accountDetailsHtml = data.status.accountDetails.map(acc =>
@@ -348,30 +469,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ targetIndex: parseInt(targetIndex, 10) })
             })
-                .then(res => res.text()).then(data => { alert(data); updateContent(); })
-                .catch(err => { alert(t('operationInProgress')); updateContent(); });
+                .then(res => res.text()).then(data => { ElementPlus.ElMessage.success(data); updateContent(); })
+                .catch(err => { ElementPlus.ElMessage.info(t('operationInProgress')); updateContent(); });
         }
-
-        const toggleStreamingMode = () => {
-            const newMode = prompt(t('enterNewMode'), CURRENT_STREAMING_MODE);
-            if (newMode === 'fake' || newMode === 'real') {
-                fetch('/api/set-mode', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mode: newMode })
-                })
-                    .then(res => res.text()).then(data => { alert(data); updateContent(); })
-                    .catch(err => alert(t('settingFailed') + err));
-            } else if (newMode !== null) {
-                alert(t('invalidMode'));
-            }
-        }
-
-        const toggleForceThinking = () => {
-            fetch('/api/toggle-force-thinking', { method: 'POST' })
-                .then(res => res.text()).then(data => { alert(data); updateContent(); })
-                .catch(err => alert(t('settingFailed') + err));
-        };
 
         document.addEventListener('DOMContentLoaded', () => {
             applyLanguage(currentLang);
