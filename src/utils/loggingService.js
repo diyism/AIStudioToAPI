@@ -17,8 +17,35 @@ class LoggingService {
         this.maxBufferSize = 100;
     }
 
+    /**
+     * Format timestamp with timezone support
+     * Supports Docker TZ environment variable (e.g., TZ=Asia/Shanghai)
+     * @returns {string} Formatted timestamp string
+     */
+    _getTimestamp() {
+        const now = new Date();
+        const timezone = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+        try {
+            // Format: YYYY-MM-DD HH:mm:ss.SSS [Timezone]
+            return now.toLocaleString("zh-CN", {
+                day: "2-digit",
+                hour: "2-digit",
+                hour12: false,
+                minute: "2-digit",
+                month: "2-digit",
+                second: "2-digit",
+                timeZone: timezone,
+                year: "numeric",
+            }).replace(/\//g, "-") + `.${now.getMilliseconds().toString().padStart(3, "0")} [${timezone}]`;
+        } catch (err) {
+            // Fallback to ISO format if timezone is invalid
+            return now.toISOString();
+        }
+    }
+
     _formatMessage(level, message) {
-        const timestamp = new Date().toISOString();
+        const timestamp = this._getTimestamp();
         const formatted = `[${level}] ${timestamp} [${this.serviceName}] - ${message}`;
 
         this.logBuffer.push(formatted);

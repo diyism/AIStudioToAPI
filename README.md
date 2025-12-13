@@ -89,6 +89,7 @@ docker run -d \
   -p 7860:7860 \
   -v /path/to/auth:/app/configs/auth \
   -e API_KEYS=your-api-key-1,your-api-key-2 \
+  -e TZ=Asia/Shanghai \
   --restart unless-stopped \
   ghcr.io/ibenzene/aistudio-to-api:latest
 ```
@@ -97,6 +98,7 @@ Parameters:
 - `-p 7860:7860`: API server port (if using a reverse proxy, strongly consider `127.0.0.1:7860`)
 - `-v /path/to/auth:/app/configs/auth`: Mount directory containing auth files
 - `-e API_KEYS`: Comma-separated list of API keys for authentication
+- `-e TZ=Asia/Shanghai`: Timezone for logs (optional, defaults to system timezone)
 
 ##### 📦 Option 2: Docker Compose
 
@@ -116,6 +118,7 @@ services:
       - ./auth:/app/configs/auth
     environment:
       API_KEYS: your-api-key-1,your-api-key-2
+      TZ: Asia/Shanghai  # Timezone for logs (optional)
 ```
 
 Start the service:

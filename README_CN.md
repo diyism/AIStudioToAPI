@@ -89,6 +89,7 @@ docker run -d \
   -p 7860:7860 \
   -v /path/to/auth:/app/configs/auth \
   -e API_KEYS=your-api-key-1,your-api-key-2 \
+  -e TZ=Asia/Shanghai \
   --restart unless-stopped \
   ghcr.io/ibenzene/aistudio-to-api:latest
 ```
@@ -97,6 +98,7 @@ docker run -d \
 - `-p 7860:7860`：API 服务器端口（如果使用反向代理，强烈建议改成 127.0.0.1:7860）
 - `-v /path/to/auth:/app/configs/auth`：挂载包含认证文件的目录
 - `-e API_KEYS`：用于身份验证的 API 密钥列表（使用逗号分隔）
+- `-e TZ=Asia/Shanghai`：时区设置（可选，默认使用系统时区）
 
 ##### 📦 方式 2：Docker Compose
 
@@ -116,6 +118,7 @@ services:
       - ./auth:/app/configs/auth
     environment:
       API_KEYS: your-api-key-1,your-api-key-2
+      TZ: Asia/Shanghai  # 日志时区设置（可选）
 ```
 
 启动服务：

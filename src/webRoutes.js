@@ -178,10 +178,29 @@ class WebRoutes {
 
         // Health check endpoint (public, no authentication required)
         app.get("/health", (req, res) => {
+            const now = new Date();
+            const timezone = process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
+            let timestamp;
+
+            try {
+                timestamp = now.toLocaleString("zh-CN", {
+                    day: "2-digit",
+                    hour: "2-digit",
+                    hour12: false,
+                    minute: "2-digit",
+                    month: "2-digit",
+                    second: "2-digit",
+                    timeZone: timezone,
+                    year: "numeric",
+                }).replace(/\//g, "-") + `.${now.getMilliseconds().toString().padStart(3, "0")} [${timezone}]`;
+            } catch (err) {
+                timestamp = now.toISOString();
+            }
+
             const healthStatus = {
                 browserConnected: !!this.serverSystem.browserManager.browser,
                 status: "ok",
-                timestamp: new Date().toISOString(),
+                timestamp,
                 uptime: process.uptime(),
             };
             res.status(200).json(healthStatus);
