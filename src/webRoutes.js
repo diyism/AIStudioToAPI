@@ -26,22 +26,41 @@ class WebRoutes {
 
     /**
      * Get real client IP address, handling various proxy scenarios
-     * Priority: X-Real-IP > X-Forwarded-For (first IP) > req.ip
+     * Priority: CDN headers > X-Real-IP > X-Forwarded-For (first IP) > req.ip
+     *
+     * Supports common CDN providers:
+     * - Cloudflare: CF-Connecting-IP
+     * - Fastly/Firebase: Fastly-Client-IP
+     * - Akamai/Cloudfront: True-Client-IP
      */
     _getClientIP(req) {
-        // X-Real-IP is set by Nginx and contains the actual client IP
+        // Priority 1: CDN-specific headers (most reliable when using CDN)
+        // Cloudflare
+        if (req.headers["cf-connecting-ip"]) {
+            return req.headers["cf-connecting-ip"];
+        }
+        // Fastly / Firebase Hosting
+        if (req.headers["fastly-client-ip"]) {
+            return req.headers["fastly-client-ip"];
+        }
+        // Akamai / Cloudfront
+        if (req.headers["true-client-ip"]) {
+            return req.headers["true-client-ip"];
+        }
+
+        // Priority 2: X-Real-IP (reliable in trusted internal proxy chains)
         if (req.headers["x-real-ip"]) {
             return req.headers["x-real-ip"];
         }
 
-        // X-Forwarded-For contains a comma-separated list of IPs
+        // Priority 3: X-Forwarded-For (can be spoofed, use as fallback)
         // Format: client, proxy1, proxy2, ...
         // We want the first IP (the original client)
         if (req.headers["x-forwarded-for"]) {
             return req.headers["x-forwarded-for"].split(",")[0].trim();
         }
 
-        // Fallback to Express's req.ip (works if trust proxy is configured)
+        // Priority 4: Direct connection IP (fallback)
         // This will be the direct connection IP if no proxy headers exist
         return req.ip || req.connection.remoteAddress || "unknown";
     }
