@@ -58,6 +58,25 @@ class RequestHandler {
     }
 
     /**
+     * Wait for WebSocket connection to be established
+     * @param {number} timeoutMs - Maximum time to wait in milliseconds
+     * @returns {Promise<boolean>} true if connection established, false if timeout
+     */
+    async _waitForConnection(timeoutMs = 10000) {
+        const startTime = Date.now();
+        const checkInterval = 200; // Check every 200ms
+
+        while (Date.now() - startTime < timeoutMs) {
+            if (this.connectionRegistry.hasActiveConnections()) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+
+        return false;
+    }
+
+    /**
      * Handle browser recovery when connection is lost
      *
      * Important: isSystemBusy flag management strategy:
@@ -97,6 +116,14 @@ class RequestHandler {
 
                 await this.browserManager.launchOrSwitchContext(recoveryAuthIndex);
                 this.logger.info(`✅ [System] Browser successfully recovered to account #${recoveryAuthIndex}!`);
+
+                // Wait for WebSocket connection to be established
+                this.logger.info("[System] Waiting for WebSocket connection to be ready...");
+                const connectionReady = await this._waitForConnection(10000); // 10 seconds timeout
+                if (!connectionReady) {
+                    throw new Error("WebSocket connection not established within timeout period");
+                }
+                this.logger.info("✅ [System] WebSocket connection is ready!");
                 recoverySuccess = true;
             } else if (this.authSource.availableIndices.length > 0) {
                 this.logger.warn("⚠️ [System] No current account, attempting to switch to first available account...");
@@ -108,6 +135,14 @@ class RequestHandler {
                     recoverySuccess = false;
                 } else {
                     this.logger.info(`✅ [System] Successfully recovered to account #${result.newIndex}!`);
+
+                    // Wait for WebSocket connection to be established
+                    this.logger.info("[System] Waiting for WebSocket connection to be ready...");
+                    const connectionReady = await this._waitForConnection(10000); // 10 seconds timeout
+                    if (!connectionReady) {
+                        throw new Error("WebSocket connection not established within timeout period");
+                    }
+                    this.logger.info("✅ [System] WebSocket connection is ready!");
                     recoverySuccess = true;
                 }
             } else {
@@ -130,6 +165,14 @@ class RequestHandler {
                         this.logger.info(
                             `✅ [System] Successfully switched to alternative account #${result.newIndex}!`
                         );
+
+                        // Wait for WebSocket connection to be established
+                        this.logger.info("[System] Waiting for WebSocket connection to be ready...");
+                        const connectionReady = await this._waitForConnection(10000);
+                        if (!connectionReady) {
+                            throw new Error("WebSocket connection not established within timeout period");
+                        }
+                        this.logger.info("✅ [System] WebSocket connection is ready!");
                         recoverySuccess = true;
                     }
                 } catch (switchError) {

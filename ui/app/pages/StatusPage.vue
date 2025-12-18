@@ -123,7 +123,7 @@
 <span class="label">{{ t('forceUrlContext') }}</span>: <span>{{ forceUrlContextIcon }}</span> <span>{{ forceUrlContextText }}</span>
 <span class="label">{{ t('apiKey') }}</span>: <span>{{ apiKeySourceText }}</span>
 --- {{ t('accountStatus') }} ---
-<span class="label">{{ t('currentAccount') }}</span>: #<span>{{ state.currentAuthIndex }}</span> (<span>{{ currentAccountName }}</span>)
+<span class="label">{{ t('currentAccount') }}</span>: #<span>{{ state.currentAuthIndex }}</span> (<span :class="currentAccountNameClass">{{ currentAccountName }}</span>)
 <span class="label">{{ t('usageCount') }}</span>: <span>{{ state.usageCount }}</span>
 <span class="label">{{ t('consecutiveFailures') }}</span>: <span>{{ state.failureCount }}</span>
 <span class="label">{{ t('totalScanned') }}</span>: <span>{{ totalScannedAccountsText }}</span><template v-for="account in state.accountDetails" :key="account.index">
@@ -313,6 +313,14 @@ const currentAccountName = computed(() => {
     }
     const account = state.accountDetails.find(acc => acc.index === state.currentAuthIndex);
     return account ? account.name : t("noActiveAccount");
+});
+
+const currentAccountNameClass = computed(() => {
+    if (state.currentAuthIndex === null || state.currentAuthIndex <= 0) {
+        return "status-error";
+    }
+    const account = state.accountDetails.find(acc => acc.index === state.currentAuthIndex);
+    return account ? "" : "status-error";
 });
 
 const forceThinkingIcon = computed(() => (state.forceThinkingEnabled ? "✅" : "❌"));
