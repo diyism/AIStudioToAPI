@@ -87,23 +87,34 @@ class AuthSwitcher {
 
             // Multi-account mode
             const currentIndexInArray = available.indexOf(this.currentAuthIndex);
-            const startIndex = currentIndexInArray !== -1 ? currentIndexInArray : 0;
-            const originalStartAccount = available[startIndex];
+            const hasCurrentAccount = currentIndexInArray !== -1;
+            const startIndex = hasCurrentAccount ? currentIndexInArray : 0;
+            const originalStartAccount = hasCurrentAccount ? available[startIndex] : null;
 
             this.logger.info("==================================================");
             this.logger.info(`🔄 [Auth] Multi-account mode: Starting intelligent account switching`);
             this.logger.info(`   • Current account: #${this.currentAuthIndex}`);
             this.logger.info(`   • Available accounts: [${available.join(", ")}]`);
-            this.logger.info(`   • Starting from: #${originalStartAccount}`);
+            if (hasCurrentAccount) {
+                this.logger.info(`   • Starting from: #${originalStartAccount}`);
+            } else {
+                this.logger.info(`   • No current account, will try all available accounts`);
+            }
             this.logger.info("==================================================");
 
             const failedAccounts = [];
-            for (let i = 1; i < available.length; i++) {
+            // If no current account (currentAuthIndex=0), start from i=0 to try all accounts
+            // If has current account, start from i=1 to skip current and try others
+            const startOffset = hasCurrentAccount ? 1 : 0;
+            const tryCount = hasCurrentAccount ? available.length - 1 : available.length;
+
+            for (let i = startOffset; i < startOffset + tryCount; i++) {
                 const tryIndex = (startIndex + i) % available.length;
                 const accountIndex = available[tryIndex];
 
+                const attemptNumber = i - startOffset + 1;
                 this.logger.info(
-                    `🔄 [Auth] Attempting to switch to account #${accountIndex} (${i}/${available.length - 1} other accounts)...`
+                    `🔄 [Auth] Attempting to switch to account #${accountIndex} (${attemptNumber}/${tryCount} accounts)...`
                 );
 
                 try {
@@ -127,35 +138,41 @@ class AuthSwitcher {
                 }
             }
 
-            this.logger.warn("==================================================");
-            this.logger.warn(
-                `⚠️ [Auth] All other accounts failed. Making final attempt with original starting account #${originalStartAccount}...`
-            );
-            this.logger.warn("==================================================");
+            // If we had a current account, try it as a final fallback
+            // If we had no current account, we already tried all accounts, so skip fallback
+            if (hasCurrentAccount && originalStartAccount) {
+                this.logger.warn("==================================================");
+                this.logger.warn(
+                    `⚠️ [Auth] All other accounts failed. Making final attempt with original starting account #${originalStartAccount}...`
+                );
+                this.logger.warn("==================================================");
 
-            try {
-                await this.browserManager.switchAccount(originalStartAccount);
-                this.resetCounters();
-                this.logger.info(`✅ [Auth] Final attempt succeeded! Switched to account #${originalStartAccount}.`);
-                return {
-                    failedAccounts,
-                    finalAttempt: true,
-                    newIndex: originalStartAccount,
-                    success: true,
-                };
-            } catch (finalError) {
-                this.logger.error(
-                    `FATAL: ❌❌❌ [Auth] Final attempt with account #${originalStartAccount} also failed!`
-                );
-                failedAccounts.push(originalStartAccount);
-                this.logger.error(
-                    `FATAL: All ${available.length} accounts failed! Failed accounts: [${failedAccounts.join(", ")}]`
-                );
-                this.currentAuthIndex = 0;
-                throw new Error(
-                    `All ${available.length} available accounts failed to initialize (including final retry).`
-                );
+                try {
+                    await this.browserManager.switchAccount(originalStartAccount);
+                    this.resetCounters();
+                    this.logger.info(
+                        `✅ [Auth] Final attempt succeeded! Switched to account #${originalStartAccount}.`
+                    );
+                    return {
+                        failedAccounts,
+                        finalAttempt: true,
+                        newIndex: originalStartAccount,
+                        success: true,
+                    };
+                } catch (finalError) {
+                    this.logger.error(
+                        `FATAL: ❌❌❌ [Auth] Final attempt with account #${originalStartAccount} also failed!`
+                    );
+                    failedAccounts.push(originalStartAccount);
+                }
             }
+
+            // All accounts failed
+            this.logger.error(
+                `FATAL: All ${available.length} accounts failed! Failed accounts: [${failedAccounts.join(", ")}]`
+            );
+            this.currentAuthIndex = 0;
+            throw new Error(`All ${available.length} available accounts failed to initialize (including final retry).`);
         } finally {
             this.isSystemBusy = false;
         }
