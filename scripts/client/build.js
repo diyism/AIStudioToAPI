@@ -23,10 +23,9 @@ const Logger = {
 };
 
 class ConnectionManager extends EventTarget {
-    // =================================================================
-    // ===                 *** Modify this line   *** ===
+    // [BrowserManager Injection Point] Do not modify the line below.
+    // This line is dynamically replaced by BrowserManager.js based on WS_PORT environment variable.
     constructor(endpoint = "ws://127.0.0.1:9998") {
-        // =================================================================
         super();
         this.endpoint = endpoint;
         this.socket = null;
@@ -94,6 +93,8 @@ class RequestProcessor {
     constructor() {
         this.activeOperations = new Map();
         this.cancelledOperations = new Set();
+        // [BrowserManager Injection Point] Do not modify the line below.
+        // This line is dynamically replaced by BrowserManager.js based on TARGET_DOMAIN environment variable.
         this.targetDomain = "generativelanguage.googleapis.com";
     }
 
